@@ -5,20 +5,25 @@
 
 void initDeck(int *ptr);
 void print_Deck(int *deck, int *count, int *hand);
-void pull(int *deck, int *count);
-void top(int *deck, int *count, int *hand);
-void bottom(int *deck, int *count, int *hand);
-void discard(int *hand);
-
+int pull(int *deck, int *count, int *hand, int *hand_flag);
+int top(int *deck, int *count, int *hand, int *hand_flag);
+int bottom(int *deck, int *count, int *hand, int *hand_flag);
+int discard(int *hand, int *hand_flag);
 
 int main(int argc, char *argv[]) {
+    FILE *file;
     int deck[5] = {};
     int count = 4;
     int hand = 0;
+    int hand_flag = 0;
     char choice;
-    initDeck(deck);
 
-    printf("Welcome. Have fun ヾ(≧▽≦*)o");
+    printf("Welcome. Have fun!!!");
+    JUMP
+    JUMP
+    printf("Loading.......................................................................................\n");
+    initDeck(deck);
+    JUMP
     printf("Options: \n");
     printf("p -> pull\n");
     printf("t -> top\n");
@@ -28,10 +33,7 @@ int main(int argc, char *argv[]) {
     printf("l -> load\n");
     printf("e -> exit\n");
     printf("o -> options\n");
-
-    JUMP
-
-    while(deck[0] != 0 || choice != 'e')
+    while(count >= 0 || hand != 0)
     {
 
         print_Deck(deck, &count, &hand);
@@ -41,9 +43,21 @@ int main(int argc, char *argv[]) {
         switch (choice)
         {
             case 'p':
-                pull(deck, &count);
-            case 'e':
+                hand = pull(deck, &count, &hand, &hand_flag);
                 break;
+            case 't':
+                hand = top(deck, &count, &hand, &hand_flag);
+                break;
+            case 'b':
+                hand = bottom(deck, &count, &hand, &hand_flag);
+                break;
+            case 'd':
+                hand = discard(&hand, &hand_flag);
+                break;
+            case 'e':
+                JUMP
+                printf("Thank you for playing!!! Till next time. :P");
+                return 0;
             case 'o':
                 printf("Options: \n");
                 printf("p -> pull\n");
@@ -55,12 +69,41 @@ int main(int argc, char *argv[]) {
                 printf("e -> exit\n");
                 JUMP
                 break;
+            case 's':
+                printf("Saving....");
+                JUMP
+                file = fopen("../save_log", "w");
+                fwrite(deck, sizeof(deck),1, file);
+                fwrite(&count, sizeof(count),1, file);
+                fwrite(&hand, sizeof(hand),1, file);
+                fwrite(&hand_flag, sizeof(hand_flag),1, file);
+                fclose(file);
+                break;
+            case 'l':
+                file = fopen("../save_log", "r");
+                if (file != NULL)
+                {
+                    printf("Loading....");
+                    JUMP
+                    fread(deck, sizeof(deck),1, file);
+                    fread(&count, sizeof(count),1, file);
+                    fread(&hand, sizeof(hand),1, file);
+                    fread(&hand_flag, sizeof(hand_flag),1, file);
+                } else
+                {
+                    JUMP
+                    printf("Nothing to load....");
+                    JUMP
+                }
+
+                break;
             default:
                 break;
         }
     }
-
-//    print_Deck(deck, count_ptr);
+    JUMP
+    printf("Game Over!!!\n");
+    printf("Thank you for playing!!! Till next time. :P");
     return 0;
 }
 
@@ -228,6 +271,7 @@ void initDeck(int *ptr)
 
 void print_Deck(int *deck, int *count, int *hand)
 {
+    JUMP
     printf("Deck: ");
     for (int i = 0; i <= *count; ++i)
     {
@@ -244,59 +288,83 @@ void print_Deck(int *deck, int *count, int *hand)
         printf("Hand: <%c> ", *hand);
     }
     else if(*hand != 0)
-        printf("Hand <%d> ", *hand);
+        printf("Hand: <%d> ", *hand);
     else
-        printf("Hand <> ");
+        printf("Hand: <> ");
     JUMP
 }
 
-void pull(int *deck, int *count)
+int pull(int *deck, int *count, int *hand, int *hand_flag)
 {
-    int card;
-    card = deck[*count];
-    deck[*count] = 0;
-    *count = *count - 1;
-
-    print_Deck(deck, count, &card);
-    setbuf(stdin,NULL);
-    printf(">");
-    char choice = fgetc(stdin);
-    switch (choice)
+    if(*hand_flag == 0)
     {
-        case 't':
-            top(deck, count, &card);
-            break;
-        case 'b':
-            bottom(deck, count, &card);
-            break;
-        case 'd':
-            discard(&card);
-            break;
-        default:
-            break;
-
+        *hand = deck[*count];
+        deck[*count] = 0;
+        *count = *count - 1;
+        *hand_flag = 1;
+        return *hand;
+    }
+    else
+    {
+        JUMP
+        printf("Wrong choice, you cannot grab a card\n");
+        printf("if you already have one in your hand.\n");
+        return *hand;
     }
 }
 
-void top(int *deck, int *count, int *hand)
+int top(int *deck, int *count, int *hand, int *hand_flag)
 {
-    *count = *count + 1;
-    deck[*count] = *hand;
-    *hand = 0;
-}
-
-void bottom(int *deck, int *count, int *hand)
-{
-    *count = *count + 1;
-    for (int i = *count; i >= 1; i--)
+    if(*hand_flag == 1)
     {
-        deck[i] = deck[i-1];
+        *count = *count + 1;
+        deck[*count] = *hand;
+        *hand = 0;
+        *hand_flag = 0;
+        return *hand;
+    } else
+    {
+        JUMP
+        printf("Wrong choice, you cannot place a card\n");
+        printf("on top of the deck without pulling it out first.\n");
+        return *hand;
     }
-    deck[0] = *hand;
-    *hand = 0;
 }
 
-void discard(int *hand)
+int bottom(int *deck, int *count, int *hand, int *hand_flag)
 {
-    *hand = 0;
+    if(*hand_flag == 1)
+    {
+        *count = *count + 1;
+        for (int i = *count; i >= 1; i--)
+        {
+            deck[i] = deck[i-1];
+        }
+        deck[0] = *hand;
+        *hand = 0;
+        *hand_flag = 0;
+        return *hand;
+    } else
+    {
+        JUMP
+        printf("Wrong choice, you cannot place a card\n");
+        printf("on the bottom of the deck without pulling it out first.\n");
+        return *hand;
+    }
+}
+
+int discard(int *hand, int *hand_flag)
+{
+    if(*hand_flag == 1)
+    {
+        *hand = 0;
+        *hand_flag = 0;
+        return *hand;
+    }else
+    {
+        JUMP
+        printf("Wrong choice, you cannot discard a card\n");
+        printf("if you don't have one in your hand.\n");
+        return *hand;
+    }
 }
